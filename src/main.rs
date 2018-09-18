@@ -8,7 +8,7 @@ fn main() {
 
         let mut arg: OsString = OsString::from("/dev/null");
 
-        if env::args_os().count() != 1 {
+        if env::args_os().count() != 2 {
             return Err("asdf".to_string())
         }
 
@@ -55,7 +55,7 @@ fn main() {
         Ok(())
     }
 
-    let srcdir = get_arg();
+    let srcdir = get_arg().unwrap();
     let dstdir = Path::new(".");
     let dir = Path::new(&srcdir);
     recurse(&dir, &dstdir).unwrap()
