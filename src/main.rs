@@ -1,4 +1,8 @@
-fn main() {
+const USAGE: &str = "
+Usage:
+    graft {PATH}";
+
+fn main() -> Result<(), Box<std::error::Error>> {
 
     use std::path::Path;
     use std::ffi::OsString;
@@ -6,18 +10,43 @@ fn main() {
     fn get_arg() -> Result<OsString, String> {
         use std::env;
 
-        let mut arg: OsString = OsString::from("/dev/null");
-
         if env::args_os().count() != 2 {
-            return Err("asdf".to_string())
+            print!("{}\n\n", USAGE);
+            return Err("Expecting exactly 1 argument".to_string())
         }
 
-        // Prints each argument on a separate line
-        for argument in env::args_os() {
-            println!("{:?}", argument);
-            arg = argument;
+        match env::args_os().nth(1) {
+            Some(ostr) => {
+                let foo = ostr.clone();
+                // check if {PATH} exists
+                if Path::new(&foo).is_dir() {
+                    print!("Good dir\n");
+                    return Ok(ostr)
+                } else {
+                    match ostr.into_string() {
+                        Ok(t) => return Err(t + " is not a directory!"),
+                        Err(_e) => return Err("Bad ostr".to_string())
+                    }
+                }
+            },
+            None => {
+                print!("{}\n\n", USAGE);
+                return Err("Expected exactly 1 argument".to_string())
+            }
         }
-        Ok(arg)
+
+        env::args_os().nth(1)
+            .ok_or(Err("Expecting exactly 1 argument"))
+            .map( |ostr| {
+                let foo = ostr.clone();
+                if Path::new(&foo).is_dir() {
+                    ostr
+                } else {
+                    unimplemented!
+                }
+            }
+            )
+
     }
 
     // 1. create subdirectory tree
@@ -32,9 +61,9 @@ fn main() {
 
             let entry = wrapped_entry?;
             let entry_path = entry.path();
-            let ft_data = entry.metadata().unwrap().file_type();
+            let ft_data = entry.metadata()?.file_type();
 
-            let target = cwd.canonicalize().unwrap().join(entry.file_name());
+            let target = cwd.canonicalize()?.join(entry.file_name());
 
             if ft_data.is_dir() {
                 // create local subdir ...
@@ -52,12 +81,35 @@ fn main() {
             
         }
 
+        // TODO: error handling?!?!?!
         Ok(())
     }
 
-    let srcdir = get_arg().unwrap();
     let dstdir = Path::new(".");
-    let dir = Path::new(&srcdir);
-    recurse(&dir, &dstdir).unwrap()
 
+    fn dir_is_empty(dst: &Path) -> Result<bool, bool> {
+        match dst.read_dir() {
+            Ok(entry) => {
+                if entry.count() != 0 {
+                    print!("Directory not empty!!!");
+                    Err(false)
+                } else {
+                    Ok(true)
+                }
+            },
+            Err(_e) => Err(false)
+        }
+    }
+
+    // error unless current dir (i.e. target) is empty
+    assert_eq!(dir_is_empty(&dstdir), Ok(true));
+
+    match get_arg() {
+        Ok(srcdir) => {
+            let dir = Path::new(&srcdir);
+            recurse(&dir, &dstdir).unwrap();
+            Ok(())
+        },
+        Err(e) => return Err(e.into())
+    }
 }
