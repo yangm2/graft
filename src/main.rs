@@ -2,52 +2,65 @@ const USAGE: &str = "
 Usage:
     graft {PATH}";
 
+use std::env;
+use std::error;
+use std::fmt;
+
+// We derive `Debug` because all types should probably derive `Debug`.
+// This gives us a reasonable human-readable description of `CliError` values.
+#[derive(Debug)]
+enum CliError {
+    MissingArg,
+    NotDir,
+    WrongArgs,
+}
+
+impl fmt::Display for CliError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            // Both underlying errors already impl `Display`, so we defer to
+            // their implementations.
+            CliError::MissingArg => write!(f, "Missing Arg:",),
+            CliError::NotDir => write!(f, "Not a Directory:",),
+            CliError::WrongArgs => write!(f, "Wrong number of args",),
+        }
+    }
+}
+
+impl error::Error for CliError {
+    fn cause(&self) -> Option<&error::Error> {
+        Some(self)
+    }    
+}
+
 fn main() -> Result<(), Box<std::error::Error>> {
 
     use std::path::Path;
     use std::ffi::OsString;
 
-    fn get_arg() -> Result<OsString, String> {
-        use std::env;
 
-        if env::args_os().count() != 2 {
-            print!("{}\n\n", USAGE);
-            return Err("Expecting exactly 1 argument".to_string())
-        }
+    fn parse_arg(mut argv: env::ArgsOs) -> Result<OsString, CliError> {
 
-        match env::args_os().nth(1) {
-            Some(ostr) => {
-                let foo = ostr.clone();
-                // check if {PATH} exists
-                if Path::new(&foo).is_dir() {
-                    print!("Good dir\n");
-                    return Ok(ostr)
-                } else {
-                    match ostr.into_string() {
-                        Ok(t) => return Err(t + " is not a directory!"),
-                        Err(_e) => return Err("Bad ostr".to_string())
-                    }
-                }
-            },
-            None => {
-                print!("{}\n\n", USAGE);
-                return Err("Expected exactly 1 argument".to_string())
+        fn check(p: OsString) -> Result<OsString, CliError> {
+            if Path::new(&p.clone()).is_dir() {
+                Ok(p)
+            } else {
+                Err(CliError::NotDir)
             }
         }
 
-        env::args_os().nth(1)
-            .ok_or(Err("Expecting exactly 1 argument"))
-            .map( |ostr| {
-                let foo = ostr.clone();
-                if Path::new(&foo).is_dir() {
-                    ostr
-                } else {
-                    unimplemented!
-                }
-            }
-            )
+        // if argv.count() != 2 {
+        //     print!("{}\n\n", USAGE);
+        //     return Err(CliError::WrongArgs)
+        // }
+
+        argv.nth(1)
+            .ok_or(CliError::MissingArg)
+            .and_then(check)
 
     }
+
+
 
     // 1. create subdirectory tree
     // 2. if not symlink, create symlink
@@ -91,7 +104,7 @@ fn main() -> Result<(), Box<std::error::Error>> {
         match dst.read_dir() {
             Ok(entry) => {
                 if entry.count() != 0 {
-                    print!("Directory not empty!!!");
+                    println!("Directory not empty!!!");
                     Err(false)
                 } else {
                     Ok(true)
@@ -104,12 +117,13 @@ fn main() -> Result<(), Box<std::error::Error>> {
     // error unless current dir (i.e. target) is empty
     assert_eq!(dir_is_empty(&dstdir), Ok(true));
 
-    match get_arg() {
+
+    match parse_arg(env::args_os()) {
         Ok(srcdir) => {
             let dir = Path::new(&srcdir);
             recurse(&dir, &dstdir).unwrap();
             Ok(())
         },
-        Err(e) => return Err(e.into())
+        Err(e) => return Err(Box::new(e))
     }
 }
