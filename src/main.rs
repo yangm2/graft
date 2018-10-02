@@ -20,9 +20,9 @@ impl fmt::Display for CliError {
         match *self {
             // Both underlying errors already impl `Display`, so we defer to
             // their implementations.
-            CliError::MissingArg => write!(f, "Missing Arg:",),
-            CliError::NotDir => write!(f, "Not a Directory:",),
-            CliError::WrongArgs => write!(f, "Wrong number of args",),
+            CliError::MissingArg => write!(f, "Missing Arg:"),
+            CliError::NotDir => write!(f, "Not a Directory:"),
+            CliError::WrongArgs => write!(f, "Wrong number of args"),
         }
     }
 }
@@ -42,6 +42,7 @@ fn main() -> Result<(), Box<std::error::Error>> {
     fn parse_arg(mut argv: env::ArgsOs) -> Result<OsString, CliError> {
 
         fn check(p: OsString) -> Result<OsString, CliError> {
+            // TODO: is the dir Readable?  eXecutable?
             if Path::new(&p.clone()).is_dir() {
                 Ok(p)
             } else {
@@ -49,17 +50,18 @@ fn main() -> Result<(), Box<std::error::Error>> {
             }
         }
 
-        // if argv.count() != 2 {
-        //     print!("{}\n\n", USAGE);
-        //     return Err(CliError::WrongArgs)
-        // }
-
-        argv.nth(1)
+        let dir = argv.by_ref().nth(1)
             .ok_or(CliError::MissingArg)
-            .and_then(check)
+            .and_then(check);
+
+        if argv.count() != 0 {
+            print!("{}\n\n", USAGE);
+            return Err(CliError::WrongArgs)
+        };
+
+        dir
 
     }
-
 
 
     // 1. create subdirectory tree
@@ -121,8 +123,7 @@ fn main() -> Result<(), Box<std::error::Error>> {
     match parse_arg(env::args_os()) {
         Ok(srcdir) => {
             let dir = Path::new(&srcdir);
-            recurse(&dir, &dstdir).unwrap();
-            Ok(())
+            recurse(&dir, &dstdir).or(Err(Box::new(CliError::NotDir)))
         },
         Err(e) => return Err(Box::new(e))
     }
