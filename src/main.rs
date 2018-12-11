@@ -30,17 +30,14 @@ impl fmt::Display for CliError {
 impl error::Error for CliError {
     fn cause(&self) -> Option<&error::Error> {
         Some(self)
-    }    
+    }
 }
 
 fn main() -> Result<(), Box<std::error::Error>> {
-
-    use std::path::Path;
     use std::ffi::OsString;
-
+    use std::path::Path;
 
     fn parse_arg(mut argv: env::ArgsOs) -> Result<OsString, CliError> {
-
         fn check(p: OsString) -> Result<OsString, CliError> {
             if Path::new(&p.clone()).is_dir() {
                 Ok(p)
@@ -54,13 +51,8 @@ fn main() -> Result<(), Box<std::error::Error>> {
         //     return Err(CliError::WrongArgs)
         // }
 
-        argv.nth(1)
-            .ok_or(CliError::MissingArg)
-            .and_then(check)
-
+        argv.nth(1).ok_or(CliError::MissingArg).and_then(check)
     }
-
-
 
     // 1. create subdirectory tree
     // 2. if not symlink, create symlink
@@ -70,9 +62,9 @@ fn main() -> Result<(), Box<std::error::Error>> {
         use std::fs;
         use std::os::unix::fs as unix_fs;
 
-        for wrapped_entry in try!(fs::read_dir(srcdir)) {
-
+        for wrapped_entry in srcdir.read_dir()? {
             let entry = wrapped_entry?;
+
             let entry_path = entry.path();
             let ft_data = entry.metadata()?.file_type();
 
@@ -91,7 +83,6 @@ fn main() -> Result<(), Box<std::error::Error>> {
                 // copy symlink
                 let _a = unix_fs::symlink(&fs::read_link(entry_path)?, &target);
             }
-            
         }
 
         // TODO: error handling?!?!?!
@@ -109,21 +100,20 @@ fn main() -> Result<(), Box<std::error::Error>> {
                 } else {
                     Ok(true)
                 }
-            },
-            Err(_e) => Err(false)
+            }
+            Err(_e) => Err(false),
         }
     }
 
     // error unless current dir (i.e. target) is empty
     assert_eq!(dir_is_empty(&dstdir), Ok(true));
 
-
     match parse_arg(env::args_os()) {
         Ok(srcdir) => {
             let dir = Path::new(&srcdir);
             recurse(&dir, &dstdir).unwrap();
             Ok(())
-        },
-        Err(e) => return Err(Box::new(e))
+        }
+        Err(e) => return Err(Box::new(e)),
     }
 }
