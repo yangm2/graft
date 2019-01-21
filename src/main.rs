@@ -4,6 +4,7 @@ Usage:
 
 use std::env;
 use std::error;
+use std::error::Error;
 use std::fmt;
 
 // We derive `Debug` because all types should probably derive `Debug`.
@@ -13,6 +14,12 @@ enum CliError {
     MissingArg,
     NotDir,
     WrongArgs,
+}
+
+impl error::Error for CliError {
+    fn cause(&self) -> Option<&error::Error> {
+        Some(self)
+    }
 }
 
 impl fmt::Display for CliError {
@@ -27,13 +34,7 @@ impl fmt::Display for CliError {
     }
 }
 
-impl error::Error for CliError {
-    fn cause(&self) -> Option<&error::Error> {
-        Some(self)
-    }
-}
-
-fn main() -> Result<(), Box<std::error::Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     use std::ffi::OsString;
     use std::path::Path;
 
@@ -79,16 +80,16 @@ fn main() -> Result<(), Box<std::error::Error>> {
 
             if ft_data.is_dir() {
                 // create local subdir ...
-                let _a = fs::create_dir(&target);
+                fs::create_dir(&target)?;
 
                 // then decend
-                let _b = recurse(&entry_path, &target);
+                recurse(&entry_path, &target)?;
             } else if !ft_data.is_symlink() {
                 // create symlink
-                let _a = unix_fs::symlink(&entry_path, &target);
+                unix_fs::symlink(&entry_path, &target)?;
             } else if ft_data.is_symlink() {
                 // copy symlink
-                let _a = unix_fs::symlink(&fs::read_link(entry_path)?, &target);
+                unix_fs::symlink(&fs::read_link(entry_path)?, &target)?;
             }
         }
 
@@ -102,7 +103,7 @@ fn main() -> Result<(), Box<std::error::Error>> {
         match dst.read_dir() {
             Ok(entry) => {
                 if entry.count() != 0 {
-                    println!("Directory not empty!!!");
+                    eprintln!("Directory not empty!!!");
                     Err(false)
                 } else {
                     Ok(true)
@@ -118,8 +119,8 @@ fn main() -> Result<(), Box<std::error::Error>> {
     match parse_arg(env::args_os()) {
         Ok(srcdir) => {
             let dir = Path::new(&srcdir);
-            recurse(&dir, &dstdir).or(Err(Box::new(CliError::NotDir)))
+            recurse(&dir, &dstdir).or_else(|_| Err(Box::from(CliError::NotDir)))
         }
-        Err(e) => return Err(Box::new(e)),
+        Err(e) => Err(Box::from(e)),
     }
 }
