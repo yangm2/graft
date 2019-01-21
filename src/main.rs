@@ -47,17 +47,18 @@ fn main() -> Result<(), Box<std::error::Error>> {
             }
         }
 
-        let dir = argv.by_ref().nth(1)
+        let dir = argv
+            .by_ref()
+            .nth(1)
             .ok_or(CliError::MissingArg)
             .and_then(check);
 
         if argv.count() != 0 {
             print!("{}\n\n", USAGE);
-            return Err(CliError::WrongArgs)
+            return Err(CliError::WrongArgs);
         };
 
         dir
-
     }
 
     // 1. create subdirectory tree
