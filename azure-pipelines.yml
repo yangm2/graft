@@ -1,0 +1,69 @@
+# Adapted from https://nbsoftsolutions.com/blog/azure-pipelines-for-rust-projects
+
+pr:
+  - master
+  - releases/*
+
+stages:
+  - stage: build_platforms
+    jobs:
+      - job: matrix
+        strategy:
+          matrix:
+            linux:
+              imageName: "ubuntu-16.04"
+            mac:
+              imageName: "macos-10.13"
+            # windows:
+            #   imageName: "vs2017-win2016"
+          maxParallel: 3
+        pool:
+          vmImage: $(imageName)
+        timeoutInMinutes: 5
+        steps:
+          - script: |
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+            displayName: Install rust
+          - script: cargo build --all
+            displayName: Cargo build
+  - stage: qualify
+    jobs:
+      - job: Test
+        pool:
+          vmImage: 'ubuntu-16.04'
+        container: 'rust:latest'
+        timeoutInMinutes: 5
+        steps:
+          - script: cargo build --all
+            displayName: Cargo build
+          - script: cargo test --all
+            displayName: Cargo test
+      - job: Clippy
+        pool:
+          vmImage: 'ubuntu-16.04'
+        container: 'rust:latest'
+        steps:
+          - script: rustup component add clippy
+            displayName: Install Clippy
+          - script: cargo clippy --all
+            displayName: Run clippy
+      - job: Fmt
+        pool:
+          vmImage: 'ubuntu-16.04'
+        container: 'rust:latest'
+        condition: in(variables['Build.Reason'], 'BatchedCI', 'IndividualCI', 'Manual', 'PullRequest')
+        steps:
+          - script: rustup component add rustfmt
+            displayName: Install Rustfmt
+          - script: cargo fmt --all -- --check
+            displayName: Run Rustfmt
+  - stage: release
+    jobs:
+      - job: Noop
+        pool:
+          vmImage: 'ubuntu-16.04'
+        container: 'rust:latest'
+        timeoutInMinutes: 2
+        steps:
+          - script: echo "TBD"
