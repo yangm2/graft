@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/yangm2/RISC-V%20ISA%20Coverage%20tool/_apis/build/status/yangm2.graft?branchName=master)](https://dev.azure.com/yangm2/RISC-V%20ISA%20Coverage%20tool/_build/latest?definitionId=2&branchName=master)
+
 # graft
 
 ## Description
