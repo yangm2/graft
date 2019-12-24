@@ -1,4 +1,4 @@
-[![Build Status](https://dev.azure.com/yangm2/My%20Open%20Source%20CI/_apis/build/status/yangm2.graft?branchName=master)](https://dev.azure.com/yangm2/My%20Open%20Source%20CI/_build/latest?definitionId=3&branchName=master) ![https://github.com/yangm2/graft/actions](https://github.com/yangm2/graft/workflows/rust/badge.svg)
+[![Build Status](https://dev.azure.com/yangm2/My%20Open%20Source%20CI/_apis/build/status/yangm2.graft?branchName=master)](https://dev.azure.com/yangm2/My%20Open%20Source%20CI/_build/latest?definitionId=3&branchName=master) ![](https://github.com/yangm2/graft/workflows/rust/badge.svg)
 
 # graft
 
