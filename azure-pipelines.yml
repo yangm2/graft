@@ -11,11 +11,11 @@ stages:
         strategy:
           matrix:
             linux:
-              imageName: "ubuntu-16.04"
+              imageName: "ubuntu-latest"
             mac:
-              imageName: "macos-10.13"
-            # windows:
-            #   imageName: "vs2017-win2016"
+              imageName: "macos-latest"
+            windows:
+              imageName: "windows-latest"
           maxParallel: 3
         pool:
           vmImage: $(imageName)
@@ -31,7 +31,7 @@ stages:
     jobs:
       - job: Test
         pool:
-          vmImage: 'ubuntu-16.04'
+          vmImage: 'ubuntu-latest'
         container: 'rust:latest'
         timeoutInMinutes: 5
         steps:
@@ -41,7 +41,7 @@ stages:
             displayName: Cargo test
       - job: Clippy
         pool:
-          vmImage: 'ubuntu-16.04'
+          vmImage: 'ubuntu-latest'
         container: 'rust:latest'
         steps:
           - script: rustup component add clippy
@@ -50,7 +50,7 @@ stages:
             displayName: Run clippy
       - job: Fmt
         pool:
-          vmImage: 'ubuntu-16.04'
+          vmImage: 'ubuntu-latest'
         container: 'rust:latest'
         condition: in(variables['Build.Reason'], 'BatchedCI', 'IndividualCI', 'Manual', 'PullRequest')
         steps:
@@ -62,7 +62,7 @@ stages:
     jobs:
       - job: Noop
         pool:
-          vmImage: 'ubuntu-16.04'
+          vmImage: 'ubuntu-latest'
         container: 'rust:latest'
         timeoutInMinutes: 2
         steps:
