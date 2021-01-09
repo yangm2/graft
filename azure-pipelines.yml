@@ -12,19 +12,32 @@ stages:
           matrix:
             linux:
               imageName: "ubuntu-latest"
+              target: 'x86_64-pc-windows-msvc'
+              rustup_toolchain: stable
             mac:
               imageName: "macos-latest"
+              target: 'x86_64-apple-darwin'
+              rustup_toolchain: stable
             windows:
               imageName: "windows-latest"
+              target: 'x86_64-unknown-linux-gnu'
+              rustup_toolchain: stable
           maxParallel: 3
         pool:
           vmImage: $(imageName)
         timeoutInMinutes: 5
         steps:
           - script: |
-              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
               echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
             displayName: Install rust
+            condition: ne( variables['Agent.OS'], 'Windows_NT' )
+          - script: |
+              curl -sSf -o rustup-init.exe https://win.rustup.rs
+              rustup-init.exe -y --default-host %target% --default-toolchain %RUSTUP_TOOLCHAIN%
+              echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
+            displayName: Windows install rust
+            condition: eq( variables['Agent.OS'], 'Windows_NT' )
           - script: cargo build --all
             displayName: Cargo build
   - stage: qualify
