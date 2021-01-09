@@ -12,7 +12,7 @@ stages:
           matrix:
             linux:
               imageName: "ubuntu-latest"
-              target: 'x86_64-pc-windows-msvc'
+              target: 'x86_64-unknown-linux-gnu'
               rustup_toolchain: stable
             mac:
               imageName: "macos-latest"
@@ -20,7 +20,7 @@ stages:
               rustup_toolchain: stable
             windows:
               imageName: "windows-latest"
-              target: 'x86_64-unknown-linux-gnu'
+              target: 'x86_64-pc-windows-msvc'
               rustup_toolchain: stable
           maxParallel: 3
         pool:
