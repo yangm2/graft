@@ -5,7 +5,10 @@ on: [push]
 jobs:
   ci:
 
-    runs-on: [ubuntu-latest, macos-11]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-11, ubuntu-latest, windows-2022]
 
     steps:
     - uses: actions/checkout@v1
