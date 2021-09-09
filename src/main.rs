@@ -1,4 +1,4 @@
-use clap::{App, Arg, crate_authors, crate_description, crate_name, crate_version};
+use clap::{crate_authors, crate_description, crate_name, crate_version, App, Arg};
 use std::error;
 use std::error::Error;
 use std::fmt;
@@ -17,12 +17,6 @@ impl error::Error for CliError {
     }
 }
 
-impl fmt::Display for CliError {
-    fn fmt(&self, _f: &mut fmt::Formatter) -> fmt::Result {
-        unimplemented!()
-    }
-}
-
 impl fmt::Debug for CliError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -35,88 +29,95 @@ impl fmt::Debug for CliError {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    fn parse_arg_with_clap() -> Result<String, CliError> {
-        fn check(p: &str) -> Result<String, CliError> {
-            // TODO: is the dir Readable?  eXecutable?
-            match Path::new(&p).is_dir() {
-                true => Ok(p.to_string()),
-                false => Err(CliError::NotDir(p.to_string())),
-            }
-        }
+impl fmt::Display for CliError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
+}
 
-        let matches = App::new(crate_name!())
-            .version(crate_version!())
-            .author(crate_authors!("\n"))
-            .about(crate_description!())
-            .arg(Arg::new("DIR")
+fn check_dir(p: &str) -> Result<String, CliError> {
+    // TODO: is the dir Readable?  eXecutable?
+    match Path::new(&p).is_dir() {
+        true => Ok(p.to_string()),
+        false => Err(CliError::NotDir(p.to_string())),
+    }
+}
+
+fn parse_arg_with_clap() -> Result<String, CliError> {
+    let matches = App::new(crate_name!())
+        .version(crate_version!())
+        .author(crate_authors!("\n"))
+        .about(crate_description!())
+        .arg(
+            Arg::new("DIR")
                 .about("source directory path")
                 .required(true)
-                .index(1)
-            )
-            .get_matches();
+                .index(1),
+        )
+        .get_matches();
 
-        // You can check the value provided by positional arguments, or option arguments
-        if let Some(i) = matches.value_of("DIR") {
-            println!("Value for DIR: {}", i);
-        }
-
-        matches
-            .value_of("DIR")
-            .ok_or(CliError::WrongArgs)
-            .and_then(check)
+    // You can check the value provided by positional arguments, or option arguments
+    if let Some(i) = matches.value_of("DIR") {
+        println!("Value for DIR: {}", i);
     }
 
-    // Algorithm:
-    //   1. create subdirectory tree
-    //   2. if not symlink, create symlink
-    //   3. if symlink, copy symlink (both absolute and relative)
-    fn recurse(srcdir: &Path, cwd: &Path) -> std::io::Result<()> {
-        use std::fs;
-        use std::os::unix::fs as unix_fs;
+    matches
+        .value_of("DIR")
+        .ok_or(CliError::WrongArgs)
+        .and_then(check_dir)
+}
 
-        for wrapped_entry in srcdir.read_dir()? {
-            let entry = wrapped_entry?;
+// Algorithm:
+//   1. create subdirectory tree
+//   2. if not symlink, create symlink
+//   3. if symlink, copy symlink (both absolute and relative)
+fn recurse(srcdir: &Path, cwd: &Path) -> std::io::Result<()> {
+    use std::fs;
+    use std::os::unix::fs as unix_fs;
 
-            let entry_path = entry.path();
-            let ft_data = entry.metadata()?.file_type();
+    for wrapped_entry in srcdir.read_dir()? {
+        let entry = wrapped_entry?;
 
-            let target = cwd.canonicalize()?.join(entry.file_name());
+        let entry_path = entry.path();
+        let ft_data = entry.metadata()?.file_type();
 
-            if ft_data.is_dir() {
-                // create local subdir ...
-                fs::create_dir(&target)?;
+        let target = cwd.canonicalize()?.join(entry.file_name());
 
-                // then decend
-                recurse(&entry_path, &target)?;
-            } else if !ft_data.is_symlink() {
-                // create symlink
-                unix_fs::symlink(&entry_path, &target)?;
-            } else if ft_data.is_symlink() {
-                // copy symlink
-                unix_fs::symlink(&fs::read_link(entry_path)?, &target)?;
+        if ft_data.is_dir() {
+            // create local subdir ...
+            fs::create_dir(&target)?;
+
+            // then decend
+            recurse(&entry_path, &target)?;
+        } else if !ft_data.is_symlink() {
+            // create symlink
+            unix_fs::symlink(&entry_path, &target)?;
+        } else if ft_data.is_symlink() {
+            // copy symlink
+            unix_fs::symlink(&fs::read_link(entry_path)?, &target)?;
+        }
+    }
+
+    // TODO: error handling?!?!?!
+    Ok(())
+}
+
+fn dir_is_empty(dst: &Path) -> Result<bool, CliError> {
+    match dst.read_dir() {
+        Ok(entry) => {
+            if entry.count() > 0 {
+                Ok(false)
+            } else {
+                Ok(true)
             }
         }
-
-        // TODO: error handling?!?!?!
-        Ok(())
+        Err(_e) => Err(CliError::NotDir(
+            dst.display().to_string(),
+        )),
     }
+}
 
-    fn dir_is_empty(dst: &Path) -> Result<bool, CliError> {
-        match dst.read_dir() {
-            Ok(entry) => {
-                if entry.count() > 0 {
-                    Ok(false)
-                } else {
-                    Ok(true)
-                }
-            }
-            Err(_e) => Err(CliError::NotDir(
-                dst.canonicalize().unwrap().display().to_string(),
-            )),
-        }
-    }
-
+fn main() -> Result<(), Box<dyn Error>> {
     match parse_arg_with_clap() {
         Ok(srcdir) => {
             // validate the destination directory
@@ -139,4 +140,53 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         Err(e) => Err(Box::from(e)),
     }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_check_dir_NotDir() {
+        use super::*;
+
+        assert_eq!(
+            check_dir("asdfasd").unwrap_err().to_string(),
+            String::from("Not a Directory: asdfasd")
+        );
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_check_dir_IsDir() {
+        use super::*;
+
+        assert_eq!(
+            check_dir("/dev/shm").unwrap().to_string(),
+            String::from("/dev/shm")
+        );
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_dir_is_empty_NotDir() {
+        use super::*;
+
+        assert_eq!(
+            dir_is_empty(&Path::new("asdfasd")).unwrap_err().to_string(),
+            String::from("Not a Directory: asdfasd")
+        );
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_dir_is_empty_False() {
+        use super::*;
+
+        // on Linux systems, "/" should always be a directory and never be empty
+        assert_eq!(
+            dir_is_empty(&Path::new("/")).unwrap(),
+            false,
+        );
+    }
+
 }
