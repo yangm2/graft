@@ -158,10 +158,7 @@ mod tests {
     fn test_check_dir_IsDir() {
         use super::*;
 
-        assert_eq!(
-            check_dir("/dev").unwrap().to_string(),
-            String::from("/dev")
-        );
+        assert_eq!(check_dir("/dev").unwrap().to_string(), String::from("/dev"));
     }
 
     #[test]
