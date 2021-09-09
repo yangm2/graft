@@ -1,8 +1,21 @@
 [package]
+authors = ["Mike Yang <yangm2@users.noreply.github.com>"]
+description = """
+Replicate the structure of an original directory-tree and populate the replica \
+with symlinks to the original directory-tree.  This is useful when the \
+original directory-tree is not writable by the user.
+
+It handles the case where the original directory-tree has a relative symlink \
+within the tree.
+"""
 name = "graft"
-version = "0.2.0"
-authors = ["Mike Yang <2mgnay@users.noreply.github.com>"]
+version = "0.3.0"
 edition = "2018"
 
-[dependencies]
-clap = "3.0.0-beta.4"
+[dependencies.clap]
+version = "3.0.0-beta.4"
+default-features = false
+features = [
+    "cargo",
+    "std", # required
+]

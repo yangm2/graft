@@ -1,4 +1,4 @@
-use clap::{App, Arg};
+use clap::{App, Arg, crate_authors, crate_description, crate_name, crate_version};
 use std::error;
 use std::error::Error;
 use std::fmt;
@@ -45,10 +45,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        let matches = App::new("graft")
-            .version("0.2")
-            .author("Mike")
-            .about("Replicate the structure of an original directory-tree and populate the replica with symlinks to the original directory-tree.")
+        let matches = App::new(crate_name!())
+            .version(crate_version!())
+            .author(crate_authors!("\n"))
+            .about(crate_description!())
             .arg(Arg::new("DIR")
                 .about("source directory path")
                 .required(true)
