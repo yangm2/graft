@@ -111,9 +111,7 @@ fn dir_is_empty(dst: &Path) -> Result<bool, CliError> {
                 Ok(true)
             }
         }
-        Err(_e) => Err(CliError::NotDir(
-            dst.display().to_string(),
-        )),
+        Err(_e) => Err(CliError::NotDir(dst.display().to_string())),
     }
 }
 
@@ -183,10 +181,6 @@ mod tests {
         use super::*;
 
         // on Linux systems, "/" should always be a directory and never be empty
-        assert_eq!(
-            dir_is_empty(&Path::new("/")).unwrap(),
-            false,
-        );
+        assert_eq!(dir_is_empty(&Path::new("/")).unwrap(), false,);
     }
-
 }
