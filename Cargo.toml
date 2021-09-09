@@ -5,4 +5,4 @@ authors = ["Mike Yang <2mgnay@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-# clap = "2.32"
+clap = "3.0.0-beta.4"
