@@ -159,8 +159,8 @@ mod tests {
         use super::*;
 
         assert_eq!(
-            check_dir("/dev/shm").unwrap().to_string(),
-            String::from("/dev/shm")
+            check_dir("/dev").unwrap().to_string(),
+            String::from("/dev")
         );
     }
 
