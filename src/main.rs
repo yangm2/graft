@@ -121,7 +121,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             // validate the destination directory
             let dstdir = Path::new(".");
             // error unless current dir (i.e. target) is empty
-            if let Ok(empty) = dir_is_empty(&dstdir) {
+            if let Ok(empty) = dir_is_empty(dstdir) {
                 if !empty {
                     return Err(Box::from(CliError::DstDirNotEmpty(
                         dstdir.canonicalize()?.display().to_string(),
@@ -130,7 +130,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             let dir = Path::new(&srcdir);
-            recurse(&dir, &dstdir).or_else(|_| {
+            recurse(dir, dstdir).or_else(|_| {
                 Err(Box::from(CliError::NotDir(
                     dir.canonicalize()?.display().to_string(),
                 )))
