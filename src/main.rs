@@ -50,7 +50,7 @@ fn parse_arg_with_clap() -> Result<String, CliError> {
         .about(crate_description!())
         .arg(
             Arg::new("DIR")
-                .about("source directory path")
+                .help("source directory path")
                 .required(true)
                 .index(1),
         )
