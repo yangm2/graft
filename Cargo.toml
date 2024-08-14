@@ -9,13 +9,13 @@ It handles the case where the original directory-tree has a relative symlink \
 within the tree.
 """
 name = "graft"
-version = "0.3.2"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies.clap]
-version = "3.0.12"
-default-features = false
+version = "4"
+default-features = true
 features = [
     "cargo",
-    "std", # required
+    "wrap_help",
 ]

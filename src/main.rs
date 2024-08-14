@@ -1,13 +1,13 @@
-use clap::{crate_authors, crate_description, crate_name, crate_version, App, Arg};
+use clap::{crate_authors, crate_description, crate_name, crate_version, Arg, Command, ValueHint};
 use std::error;
 use std::error::Error;
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 // Custom error type
 enum CliError {
     DstDirNotEmpty(String),
-    NotDir(String),
+    NotDir(PathBuf),
     WrongArgs,
 }
 
@@ -23,7 +23,7 @@ impl fmt::Debug for CliError {
             // Both underlying errors already impl `Display`, so we defer to
             // their implementations.
             CliError::DstDirNotEmpty(s) => write!(f, "Destination directory ({}) is not empty", s),
-            CliError::NotDir(s) => write!(f, "Not a Directory: {}", s),
+            CliError::NotDir(s) => write!(f, "Not a Directory: {}", s.display()),
             CliError::WrongArgs => write!(f, "Wrong number of args"),
         }
     }
@@ -35,34 +35,35 @@ impl fmt::Display for CliError {
     }
 }
 
-fn check_dir(p: &str) -> Result<String, CliError> {
+fn check_dir(p: &PathBuf) -> Result<PathBuf, CliError> {
     // TODO: is the dir Readable?  eXecutable?
-    match Path::new(&p).is_dir() {
-        true => Ok(p.to_string()),
-        false => Err(CliError::NotDir(p.to_string())),
+    match Path::new(p).is_dir() {
+        true => Ok(p.to_path_buf()),
+        false => Err(CliError::NotDir(p.to_path_buf())),
     }
 }
 
-fn parse_arg_with_clap() -> Result<String, CliError> {
-    let matches = App::new(crate_name!())
+fn parse_arg_with_clap() -> Result<PathBuf, CliError> {
+    let app = Command::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!("\n"))
         .about(crate_description!())
         .arg(
             Arg::new("DIR")
                 .help("source directory path")
+                .value_hint(ValueHint::DirPath)
+                .value_parser(clap::builder::PathBufValueParser::new())
                 .required(true)
                 .index(1),
         )
         .get_matches();
 
     // You can check the value provided by positional arguments, or option arguments
-    if let Some(i) = matches.value_of("DIR") {
-        println!("Value for DIR: {}", i);
+    if let Some(i) = app.get_one::<PathBuf>("DIR") {
+        println!("Value for DIR: {}", i.display());
     }
 
-    matches
-        .value_of("DIR")
+    app.get_one::<PathBuf>("DIR")
         .ok_or(CliError::WrongArgs)
         .and_then(check_dir)
 }
@@ -111,7 +112,7 @@ fn dir_is_empty(dst: &Path) -> Result<bool, CliError> {
                 Ok(true)
             }
         }
-        Err(_e) => Err(CliError::NotDir(dst.display().to_string())),
+        Err(_e) => Err(CliError::NotDir(dst.to_path_buf())),
     }
 }
 
@@ -129,12 +130,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
 
-            let dir = Path::new(&srcdir);
-            recurse(dir, dstdir).or_else(|_| {
-                Err(Box::from(CliError::NotDir(
-                    dir.canonicalize()?.display().to_string(),
-                )))
-            })
+            let dir = srcdir.as_path();
+            recurse(dir, dstdir).or_else(|_| Err(Box::from(CliError::NotDir(dir.canonicalize()?))))
         }
         Err(e) => Err(Box::from(e)),
     }
@@ -148,7 +145,9 @@ mod tests {
         use super::*;
 
         assert_eq!(
-            check_dir("asdfasd").unwrap_err().to_string(),
+            check_dir(&PathBuf::from(r"asdfasd"))
+                .unwrap_err()
+                .to_string(),
             String::from("Not a Directory: asdfasd")
         );
     }
@@ -158,7 +157,13 @@ mod tests {
     fn test_check_dir_IsDir() {
         use super::*;
 
-        assert_eq!(check_dir("/dev").unwrap().to_string(), String::from("/dev"));
+        assert_eq!(
+            check_dir(&PathBuf::from(r"/dev"))
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            String::from("/dev")
+        );
     }
 
     #[test]
