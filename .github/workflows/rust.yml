@@ -5,10 +5,12 @@ on: [push]
 jobs:
   ci:
 
+    # NOTE: 'graft' requires a unix-like FS, so building on Windows does not
+    #       make sense
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -20,3 +22,5 @@ jobs:
       run: cargo build --verbose
     - name: Test
       run: cargo test --verbose
+    - name: Build rel
+      run: cargo build --verbose --release
