@@ -9,8 +9,8 @@ It handles the case where the original directory-tree has a relative symlink \
 within the tree.
 """
 name = "graft"
-version = "0.4.2"
-edition = "2021"
+version = "0.4.3"
+edition = "2024"
 
 [dependencies.clap]
 version = "4"

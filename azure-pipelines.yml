@@ -18,10 +18,10 @@ stages:
               vmImage: "macOS-latest"
               target: 'aarch64-apple-darwin'
               rustup_toolchain: stable
-          maxParallel: 2
+          maxParallel: "2"
         pool:
           vmImage: $(vmImage)
-        timeoutInMinutes: 5
+        timeoutInMinutes: "5"
         steps:
           # - script: |
           #     curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
@@ -35,7 +35,7 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         container: 'rust:latest'
-        timeoutInMinutes: 5
+        timeoutInMinutes: "5"
         steps:
           - script: cargo build --all
             displayName: Cargo build
@@ -66,6 +66,6 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         container: 'rust:latest'
-        timeoutInMinutes: 2
+        timeoutInMinutes: "2"
         steps:
           - script: echo "TBD"

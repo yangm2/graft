@@ -1,26 +1,57 @@
-name: Rust
+name: CI
 
-on: [push]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  ci:
 
-    # NOTE: 'graft' requires a unix-like FS, so building on Windows does not
-    #       make sense
-    runs-on: ${{ matrix.os }}
+  ci:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        include:
+          - deps: locked
+            cargo_flags: --locked
+          - deps: latest
+            cargo_flags: ""
+    name: CI (${{ matrix.deps }} deps)
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Format
-      run: cargo fmt -- --check --verbose
+    - uses: actions/checkout@v6
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+        targets: thumbv6m-none-eabi
+
+    - name: Cache dependencies
+      uses: Swatinem/rust-cache@v2.9.1
+      with:
+        key: ${{ matrix.deps }}
+
+    - name: Update to latest dependencies
+      if: matrix.deps == 'latest'
+      run: cargo update
+
+    - name: Format check
+      if: matrix.deps == 'locked'
+      run: cargo fmt -- --check
+
     - name: Lint
-      run: cargo check --verbose
-    - name: Build dev
-      run: cargo build --verbose
-    - name: Test
-      run: cargo test --verbose
-    - name: Build rel
-      run: cargo build --verbose --release
+      run: cargo clippy ${{ matrix.cargo_flags }} --workspace --examples -- -Dwarnings
+
+    - name: Host tests
+      run: cargo test ${{ matrix.cargo_flags }} --target x86_64-unknown-linux-gnu
+
+    - name: Build (debug)
+      run: cargo build ${{ matrix.cargo_flags }}
+
+    - name: Build (release)
+      run: cargo build ${{ matrix.cargo_flags }} --release
