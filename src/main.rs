@@ -1,4 +1,4 @@
-use clap::{crate_authors, crate_description, crate_name, crate_version, Arg, Command, ValueHint};
+use clap::{Arg, Command, ValueHint, crate_authors, crate_description, crate_name, crate_version};
 use std::error;
 use std::error::Error;
 use std::fmt;
@@ -122,12 +122,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             // validate the destination directory
             let dstdir = Path::new(".");
             // error unless current dir (i.e. target) is empty
-            if let Ok(empty) = dir_is_empty(dstdir) {
-                if !empty {
-                    return Err(Box::from(CliError::DstDirNotEmpty(
-                        dstdir.canonicalize()?.display().to_string(),
-                    )));
-                }
+            if let Ok(empty) = dir_is_empty(dstdir)
+                && !empty
+            {
+                return Err(Box::from(CliError::DstDirNotEmpty(
+                    dstdir.canonicalize()?.display().to_string(),
+                )));
             }
 
             let dir = srcdir.as_path();
